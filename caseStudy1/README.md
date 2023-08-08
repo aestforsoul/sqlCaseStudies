@@ -1,4 +1,8 @@
 # Case Study #1 - Danny's Diner
+<b>Entity Relationship Diagram</b>
+![image](https://github.com/aestforsoul/sqlCaseStudies/assets/80065994/312e7923-6794-4328-9456-b5efed0d11c3)
+<br>
+
 1. What is the total amount each customer spent at the restaurant?
 ```sql
 SELECT sales.customer_id, SUM(menu.price) AS total_amount
@@ -169,4 +173,47 @@ GROUP BY customer_id
 ```
 Result:<br>
 ![image](https://github.com/aestforsoul/sqlCaseStudies/assets/80065994/97fb0dd5-aaef-4559-9984-7b5dcd662319)
+<br>
+
+Join All The Things
+```sql
+SELECT sales.customer_id, sales.order_date, menu.product_name, menu.price,
+CASE WHEN members.join_date IS NULL THEN 'N'
+WHEN sales.order_date < members.join_date THEN 'N'
+ELSE 'Y'
+END AS member
+FROM sales
+LEFT JOIN menu
+ON sales.product_id = menu.product_id
+LEFT JOIN members
+ON sales.customer_id = members.customer_id
+ORDER BY sales.customer_id, sales.order_date
+```
+Result:<br>
+![image](https://github.com/aestforsoul/sqlCaseStudies/assets/80065994/cf3d5a55-613b-4018-a290-a9db7a33b3c6)
+<br>
+
+Rank All The Things <br>
+Danny also requires further information about the ranking of customer products, but he purposely does not need the ranking for non-member purchases so he expects null ranking values for the records when customers are not yet part of the loyalty program.
+```sql
+WITH orders AS (
+SELECT sales.customer_id, sales.order_date, menu.product_name, menu.price,
+CASE WHEN members.join_date IS NULL THEN 'N'
+WHEN sales.order_date < members.join_date THEN 'N'
+ELSE 'Y'
+END AS member
+FROM sales
+LEFT JOIN menu
+ON sales.product_id = menu.product_id
+LEFT JOIN members
+ON sales.customer_id = members.customer_id
+ORDER BY sales.customer_id, sales.order_date)
+SELECT *, 
+CASE WHEN member = 'N' THEN NULL
+ELSE RANK() OVER(PARTITION BY customer_id, member ORDER BY order_date)
+END AS ranking
+FROM orders
+```
+Result:<br>
+![image](https://github.com/aestforsoul/sqlCaseStudies/assets/80065994/dfe73853-7994-4671-a7e4-58113c169535)
 <br>
